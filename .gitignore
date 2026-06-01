@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Backup-/Altdateien
+*.bak
+
+# Lokale Claude-Code-Einstellungen
+.claude/
+
+# Lokale, benutzerspezifische Settings (werden zur Laufzeit unter
+# ~/.config/nas-backup-generator/ erzeugt – nichts davon gehört ins Repo)
+settings.json
