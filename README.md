@@ -8,9 +8,7 @@ Abhängigkeiten.
 > Klicke dich durch die Tabs, fülle deine NAS-Daten ein und lass dir ein
 > komplettes, sofort installierbares Backup-Setup generieren.
 
-<!-- Screenshot hier einfügen:
-![Screenshot](docs/screenshot.png)
--->
+![Screenshot des NAS-Backup-Generators](docs/screenshot.png)
 
 ## Features
 

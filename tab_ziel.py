@@ -133,7 +133,8 @@ class ZielTabMixin:
 
         self._select_auth("key")
 
-        info = ("rsync-Flags:  -aAXz --delete  (Archiv, ACLs, xattr, komprimiert)\n"
+        info = ("rsync-Flags:  -aHz --numeric-ids --no-specials --no-devices --delete\n"
+                "  + --fake-super  (Owner/Rechte in xattrs → Hardlinks via --link-dest)\n"
                 "Passwort-Modus benötigt sshpass  →  sudo apt install sshpass")
         tk.Label(tab, text=info, bg=BG2, fg="#888",
                  font=("Mono", 11), justify="left", padx=10, pady=8
