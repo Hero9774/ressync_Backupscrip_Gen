@@ -4,44 +4,67 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Projektzweck
 
-`nas-backup.sh` sichert `/home` und `/etc` eines Debian/Ubuntu-Systems inkrementell auf ein **Asustor NAS (AS5402T, ADM-OS)** via rsync über SSH. Jede Ausführung legt einen datierten Snapshot an (`YYYY-MM-DD/`) und nutzt Hardlinks auf den vorherigen `latest`-Snapshot, um Speicherplatz zu sparen. Außerdem wird die Paketliste (`dpkg --get-selections`) gesichert.
+Dieses Repo ist ein **Tkinter-GUI-Generator** (Dark-Theme, mehrere Tabs), der
+fertige Skripte für inkrementelle **rsync-über-SSH-Backups auf ein NAS** erzeugt.
+Erzeugt werden: das Backup-Skript, ein Restore-Skript, systemd-`.service`/`.timer`,
+ein `install.sh` und eine `INSTALLATION.txt`.
 
-## Abhängigkeiten
+Die generierten Backups legen pro Lauf einen datierten Snapshot (`YYYY-MM-DD/`) an
+und verlinken unveränderte Dateien per Hardlink (`--link-dest`) auf den vorherigen
+Snapshot, um Speicherplatz zu sparen. Optional wird die Paketliste
+(`dpkg --get-selections`) mitgesichert.
 
-- `bash`, `rsync`, `openssh-client` (Standardpakete)
-- `dpkg` (Debian/Ubuntu)
-- SSH-Key unter `/home/hero/.ssh/id_ed25519` muss auf dem NAS autorisiert sein
-- Asustor AS5402T (`192.168.178.52`) mit aktiviertem rsync-Modul (`hero_lw3`) und SSH-Zugang auf **Port 29**, User `Hero` (SMB-Pfad zur Referenz: `smb://192.168.178.52/backup_lw3/Linux`)
-- Volume auf dem NAS sollte **Btrfs oder ext4** sein, damit Hardlinks (`--link-dest`) funktionieren
+## Aufbau
 
-## Konfiguration (Variablen am Skriptanfang)
+Reine Python-Standardbibliothek (`tkinter`), keine externen Abhängigkeiten.
 
-| Variable | Bedeutung |
+| Datei | Inhalt |
 |---|---|
-| `NAS_USER` / `NAS_HOST` | SSH-Zugangsdaten zum NAS |
-| `NAS_MODULE` | rsync-Modulname auf dem NAS |
-| `SSH_KEY` | Pfad zum privaten SSH-Schlüssel |
-| `LOG` | Log-Datei (erfordert Schreibrecht, z. B. via sudo) |
+| `nas_backup_generator.py` | App-Einstieg, definiert alle GUI-Variablen/Defaults |
+| `tab_ziel.py` | Tab „Ziel" (NAS-Host/User/Key, Verbindungstest, SSH-Hilfe) |
+| `tab_quellen.py` | Tab „Quellen" (zu sichernde Verzeichnisse, Excludes) |
+| `tab_zeitplan.py` | Tab „Zeitplan" (OnCalendar für den systemd-Timer) |
+| `tab_aufbewahrung.py` | Tab „Aufbewahrung" (max. Snapshots, dpkg, Größenkalkulation) |
+| `tab_testlauf.py` | Tab „Testlauf" (Live-Ausführung mit `NAS_BACKUP_LIVE_LOG=1`) |
+| `generators.py` | `GeneratorMixin`: erzeugt alle Skript-Dateien als Strings |
+| `settings.py` | Persistenz der GUI-Eingaben (`~/.config/nas-backup-generator/settings.json`) |
+| `widgets.py`, `dialogs.py`, `constants.py` | UI-Bausteine, Dialoge, Theme-Konstanten |
 
-## Ausführen
+## Starten
 
 ```bash
-# Syntax-Check (kein NAS nötig)
-bash -n nas-backup.sh
-
-# Backup starten (NAS muss erreichbar sein)
-sudo bash nas-backup.sh
-
-# Log verfolgen
-sudo tail -f /var/log/nas-backup.log
+python3 nas_backup_generator.py        # erfordert grafische Umgebung (X11/Wayland)
 ```
 
-## NAS-Verzeichnisstruktur
+## Syntax-Check / Linting
 
-Auf dem Asustor liegt das Backup unter **`/volume3/Backup_LW3`** (das relevante Volume ist Volume 3, nicht der ADM-Standard Volume 1):
+```bash
+python3 -m py_compile <datei.py>
+python3 -m pyflakes <datei.py>
+```
+
+## Generierte Backups – Voraussetzungen
+
+- Quell-System mit `bash`, `rsync`, `openssh-client`, systemd (Debian/Ubuntu für `dpkg`)
+- Ein NAS mit SSH-Zugang; der gewählte SSH-Key muss dort autorisiert sein
+- NAS-Volume sollte **Btrfs oder ext4** sein, damit Hardlinks (`--link-dest`) greifen
+
+### Wichtig: rsync läuft auf dem NAS oft als non-root
+
+Viele NAS-Systeme erzwingen Owner/Rechte (z. B. alles als der Login-Benutzer mit
+`777`). Damit `--link-dest` trotzdem Hardlinks erzeugt (statt bei jedem Lauf ein
+Vollbackup), nutzen die generierten Skripte:
+
+- `--rsync-path="rsync --fake-super"` – speichert Owner/Group/Perms in xattrs
+  (setzt user-xattr-fähiges Dateisystem voraus, z. B. Btrfs/ext4)
+- `--numeric-ids` – numerische uid/gid statt Namensmapping
+- `--no-specials --no-devices` – Sockets/FIFOs/Geräte überspringen (auf ihnen
+  lassen sich keine xattrs setzen → sonst rsync-Exit-Code 23)
+
+## NAS-Verzeichnisstruktur (Beispiel)
 
 ```
-/volume3/Backup_LW3/Linux/
+<NAS-Basis-Pfad>/
 ├── 2025-04-01/
 │   ├── home/
 │   ├── etc/
@@ -51,22 +74,7 @@ Auf dem Asustor liegt das Backup unter **`/volume3/Backup_LW3`** (das relevante 
 └── latest -> 2025-04-02   (Symlink)
 ```
 
-## Automation
-
-**systemd-Timer** (empfohlen):
-```
-/etc/systemd/system/nas-backup.service
-/etc/systemd/system/nas-backup.timer
-```
-
-**cron** (alternativ):
-```cron
-0 3 * * * root /bin/bash /pfad/zu/nas-backup.sh
-```
-
 ## Dry-Run
 
-Um das Skript ohne tatsächliche Übertragung zu testen, `--dry-run` zu den rsync-Aufrufen hinzufügen:
-```bash
-rsync -aAXz --dry-run --delete ...
-```
+`--dry-run` zu den rsync-Aufrufen im generierten Skript hinzufügen, um ohne
+tatsächliche Übertragung zu testen.

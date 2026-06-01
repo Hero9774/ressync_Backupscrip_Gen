@@ -39,12 +39,12 @@ class App(
         root.resizable(True, True)
 
         # ── Ziel-Variablen ──────────────────────────────────────────────
-        self.nas_host     = tk.StringVar(value="192.168.178.52")
-        self.nas_user     = tk.StringVar(value="Hero")
-        self.nas_ssh_port = tk.StringVar(value="29")
+        self.nas_host     = tk.StringVar(value="")
+        self.nas_user     = tk.StringVar(value="")
+        self.nas_ssh_port = tk.StringVar(value="22")
         self.ssh_key      = tk.StringVar(
-            value=os.path.expanduser("~/.ssh/ssh-key-Hero-2026050801.key"))
-        self.nas_base     = tk.StringVar(value="/volume3/Backup_LW3/Linux")
+            value=os.path.expanduser("~/.ssh/id_ed25519"))
+        self.nas_base     = tk.StringVar(value="/volume1/backup/Linux")
         self.log_file     = tk.StringVar(value="/var/log/nas-backup.log")
         self.service_name = tk.StringVar(value="nas-backup")
         # "key" | "password" | "key_fallback"

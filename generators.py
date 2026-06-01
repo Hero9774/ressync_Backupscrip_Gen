@@ -73,7 +73,7 @@ class GeneratorMixin:
         if not base.startswith("/"):
             self._zdlg("error", "Fehler",
                 "Basis-Pfad auf NAS muss mit '/' beginnen "
-                "(z.B. /volume3/Backup_LW3/Linux).")
+                "(z.B. /volume1/backup/Linux).")
             return None
 
         files = {

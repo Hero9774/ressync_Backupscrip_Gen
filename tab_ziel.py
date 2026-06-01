@@ -44,7 +44,7 @@ class ZielTabMixin:
                           cursor="hand2", font=("Sans", 11)
                           ).grid(row=0, column=2, padx=(4, 0))
                 tk.Label(cell,
-                         text="Absoluter Pfad auf dem NAS  —  z. B.  /volume3/Backup_LW3/Linux"
+                         text="Absoluter Pfad auf dem NAS  —  z. B.  /volume1/backup/Linux"
                               "  (wird via SSH als  user@host:/pfad/…  angesprochen)",
                          bg=BG, fg="#777", font=("Sans", 10)
                          ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(2, 0))
@@ -409,7 +409,7 @@ class ZielTabMixin:
 
     def _show_ssh_help(self) -> None:
         key_path = self.ssh_key.get().strip() or "~/.ssh/nas_backup.key"
-        user = self.nas_user.get().strip() or "Hero"
+        user = self.nas_user.get().strip() or "<NAS-Benutzer>"
         host = self.nas_host.get().strip() or "<NAS-IP>"
         port = self.nas_ssh_port.get().strip() or "22"
 
